@@ -34,6 +34,8 @@ void ABaseShip::Tick(float DeltaTime)
 		Velocity = Velocity.GetSafeNormal() * MaxSpeed;
 	}
 
+	//Velocity += FVector(0.f, 0.f, -GravityForce) * DeltaTime;
+
 	// Move actor with sweep so collisions work
 	AddActorWorldOffset(Velocity * DeltaTime, true);
 }

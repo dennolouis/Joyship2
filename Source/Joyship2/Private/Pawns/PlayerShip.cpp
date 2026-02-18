@@ -6,6 +6,8 @@ APlayerShip::APlayerShip()
 {
 	AutoPossessPlayer = EAutoReceiveInput::Player0;
 
+	SetRootComponent(ShipMesh);
+
 	// Spring arm
 	SpringArm = CreateDefaultSubobject<USpringArmComponent>(TEXT("SpringArm"));
 	SpringArm->SetupAttachment(RootComponent);

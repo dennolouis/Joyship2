@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
+#include "Components/CapsuleComponent.h"
 #include "BaseShip.generated.h"
 
 UCLASS()
@@ -25,6 +26,7 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship")
 	UStaticMeshComponent* ShipMesh;
+
 
 	/* ---------------- HEALTH ---------------- */
 
@@ -60,6 +62,10 @@ public:
 	// Maximum speed clamp
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ship|Movement")
 	float MaxSpeed = 3000.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ship|Movement")
+	float GravityForce = 600.f;
+
 
 	/* Movement functions */
 	UFUNCTION(BlueprintCallable)
