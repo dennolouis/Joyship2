@@ -21,8 +21,8 @@ public:
 
 	/* ---------------- COMPONENTS ---------------- */
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship")
-	USceneComponent* Root;
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship")
+    UCapsuleComponent* Root;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship")
 	UStaticMeshComponent* ShipMesh;
