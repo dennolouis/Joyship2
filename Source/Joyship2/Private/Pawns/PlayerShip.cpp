@@ -32,15 +32,19 @@ void APlayerShip::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	// Apply rotation every frame
-	if (!FMath::IsNearlyZero(RotationInput))
-	{
-		RotateShip(RotationInput, DeltaTime);
-	}
+    // Apply rotation every frame (call even when input is nearly zero so physics can be cleared)
+    RotateShip(RotationInput, DeltaTime);
 
 	// Apply thrust while held
+	// Always call ApplyThrust so targets update; when not thrusting, target goes to zero
 	if (bThrusting)
 	{
 		ApplyThrust(DeltaTime);
+	}
+	else
+	{
+		// Tell the ship to stop producing thrust (target velocity zero)
+		this->TargetLinearVelocity = FVector::ZeroVector;
 	}
 }
 
@@ -70,5 +74,5 @@ void APlayerShip::StartThrust()
 
 void APlayerShip::StopThrust()
 {
-	bThrusting = false;
+    bThrusting = false;
 }

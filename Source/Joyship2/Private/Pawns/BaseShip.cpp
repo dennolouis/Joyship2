@@ -99,6 +99,28 @@ void ABaseShip::Tick(float DeltaTime)
         // When simulating physics, update stored velocity from the physics body
         Velocity = Root->GetComponentVelocity();
         UE_LOG(LogTemp, Warning, TEXT("[BaseShip] Tick: Physics simulated. Velocity=(%.2f,%.2f,%.2f) Mass=%.2f"), Velocity.X, Velocity.Y, Velocity.Z, Root->GetMass());
+
+        // Smoothly interpolate towards target velocities (set by input handlers)
+        FVector CurLin = Root->GetPhysicsLinearVelocity();
+        FVector NewLin = FMath::VInterpTo(CurLin, TargetLinearVelocity, DeltaTime, LinearSmooth);
+
+        // If target requests movement but current velocity is effectively zero, give a small kick
+        if (TargetLinearVelocity.SizeSquared() > KINDA_SMALL_NUMBER && CurLin.SizeSquared() < 1.f)
+        {
+            FVector Boost = TargetLinearVelocity * 0.25f;
+            NewLin = FMath::VInterpTo(CurLin, Boost, DeltaTime, FMath::Max(LinearSmooth * 4.f, 10.f));
+            UE_LOG(LogTemp, Warning, TEXT("[BaseShip] Tick: Boosting start movement. Boost=(%.2f,%.2f,%.2f)"), Boost.X, Boost.Y, Boost.Z);
+        }
+
+        UE_LOG(LogTemp, Warning, TEXT("[BaseShip] Tick: CurLin=(%.2f,%.2f,%.2f) TargetLin=(%.2f,%.2f,%.2f) NewLin=(%.2f,%.2f,%.2f)"),
+            CurLin.X, CurLin.Y, CurLin.Z,
+            TargetLinearVelocity.X, TargetLinearVelocity.Y, TargetLinearVelocity.Z,
+            NewLin.X, NewLin.Y, NewLin.Z);
+        Root->SetPhysicsLinearVelocity(NewLin, false);
+
+        FVector CurAng = Root->GetPhysicsAngularVelocityInRadians();
+        FVector NewAng = FMath::VInterpTo(CurAng, TargetAngularVelocity, DeltaTime, AngularSmooth);
+        Root->SetPhysicsAngularVelocityInRadians(NewAng, false);
     }
 }
 
@@ -106,13 +128,29 @@ void ABaseShip::Tick(float DeltaTime)
 
 void ABaseShip::RotateShip(float Input, float DeltaTime)
 {
-	if (FMath::IsNearlyZero(Input)) return;
+    // Log entry so we can see incoming input and physics state
+    if (Root)
+    {
+        FVector CurAngVel = Root->GetPhysicsAngularVelocityInRadians();
+        UE_LOG(LogTemp, Warning, TEXT("[BaseShip] RotateShip ENTRY: Input=%.4f Simulating=%s CurAngVel=(%.4f,%.4f,%.4f)"), Input, Root->IsSimulatingPhysics() ? TEXT("true") : TEXT("false"), CurAngVel.X, CurAngVel.Y, CurAngVel.Z);
+    }
+
+    // If input is nearly zero, stop any physics angular velocity so the ship stops rotating.
+    if (FMath::IsNearlyZero(Input))
+    {
+        if (Root && Root->IsSimulatingPhysics())
+        {
+            Root->SetPhysicsAngularVelocityInRadians(FVector::ZeroVector, false);
+            UE_LOG(LogTemp, Warning, TEXT("[BaseShip] RotateShip: Input nearly zero — cleared angular velocity"));
+        }
+        return;
+    }
 
     // If physics is enabled, directly set angular velocity to avoid unbounded spin.
     if (Root && Root->IsSimulatingPhysics())
     {
         // Desired angular speed in degrees/sec -> convert to radians/sec
-        float DesiredDegPerSec = Input * TurnSpeed;
+        float DesiredDegPerSec = -Input * TurnSpeed;
         float DesiredRadPerSec = FMath::DegreesToRadians(DesiredDegPerSec);
 
         // Use actor forward as the roll axis
@@ -123,13 +161,13 @@ void ABaseShip::RotateShip(float Input, float DeltaTime)
         DesiredRadPerSec = FMath::Clamp(DesiredRadPerSec, -MaxRad, MaxRad);
 
         FVector AngularVel = RollAxis * DesiredRadPerSec;
-        Root->SetPhysicsAngularVelocityInRadians(AngularVel, false);
-        UE_LOG(LogTemp, Warning, TEXT("[BaseShip] RotateShip: Set angular velocity=(%.2f,%.2f,%.2f) (rad/s) Input=%.2f"), AngularVel.X, AngularVel.Y, AngularVel.Z, Input);
+        TargetAngularVelocity = AngularVel;
+        UE_LOG(LogTemp, Warning, TEXT("[BaseShip] RotateShip: Set TargetAngularVelocity=(%.2f,%.2f,%.2f) (rad/s) Input=%.2f"), AngularVel.X, AngularVel.Y, AngularVel.Z, Input);
     }
     else
     {
         FRotator Rot = GetActorRotation();
-        Rot.Roll += Input * TurnSpeed * DeltaTime;
+        Rot.Roll += -Input * TurnSpeed * DeltaTime;
         SetActorRotation(Rot);
         UE_LOG(LogTemp, Warning, TEXT("[BaseShip] RotateShip: Kinematic rotation applied. NewRoll=%.2f Input=%.2f"), Rot.Roll, Input);
     }
@@ -141,10 +179,10 @@ void ABaseShip::ApplyThrust(float DeltaTime)
 
     if (Root && Root->IsSimulatingPhysics())
     {
-        // Apply a force in the forward direction
-        FVector Force = Forward * ThrustForce * Root->GetMass();
-        Root->AddForce(Force);
-        UE_LOG(LogTemp, Warning, TEXT("[BaseShip] ApplyThrust: Applied force=(%.2f,%.2f,%.2f) ThrustForce=%.2f Mass=%.2f"), Force.X, Force.Y, Force.Z, ThrustForce, Root->GetMass());
+        // Set target linear velocity (smoothed each Tick)
+        FVector DesiredVel = Forward * ThrustForce; // treat ThrustForce as target speed for simplicity
+        TargetLinearVelocity = DesiredVel;
+        UE_LOG(LogTemp, Warning, TEXT("[BaseShip] ApplyThrust: Set TargetLinearVelocity=(%.2f,%.2f,%.2f)"), DesiredVel.X, DesiredVel.Y, DesiredVel.Z);
     }
     else
     {

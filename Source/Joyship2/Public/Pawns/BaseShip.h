@@ -47,9 +47,20 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship|Movement")
 	FVector Velocity = FVector::ZeroVector;
 
+    // Internal smoothed targets
+    FVector TargetLinearVelocity = FVector::ZeroVector;
+    FVector TargetAngularVelocity = FVector::ZeroVector;
+
 	// Forward thrust force
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ship|Movement")
 	float ThrustForce = 1400.f;
+
+    // Smoothing rates for interpolation (higher = snappier)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ship|Movement")
+    float LinearSmooth = 6.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ship|Movement")
+    float AngularSmooth = 8.f;
 
 	// Turning speed (degrees/sec)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ship|Movement")
