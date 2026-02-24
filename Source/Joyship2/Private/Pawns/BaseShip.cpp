@@ -1,6 +1,7 @@
 #include "Pawns/BaseShip.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "GameFramework/ProjectileMovementComponent.h"
 
 ABaseShip::ABaseShip()
 {
@@ -206,4 +207,31 @@ void ABaseShip::ApplyDamage(float DamageAmount)
 void ABaseShip::OnShipDestroyed()
 {
 	Destroy();
+}
+
+void ABaseShip::Fire()
+{
+    if (!ProjectileClass) return;
+    UWorld* World = GetWorld();
+    if (!World) return;
+
+    // Spawn at the ship's muzzle using the ship's up/forward/right offsets
+    FVector SpawnLoc = GetActorLocation() + GetActorUpVector() * MuzzleOffset.Z + GetActorForwardVector() * MuzzleOffset.X + GetActorRightVector() * MuzzleOffset.Y;
+    FRotator SpawnRot = GetActorRotation();
+
+    FActorSpawnParameters Params;
+    Params.Owner = this;
+    Params.Instigator = Cast<APawn>(GetInstigator());
+
+    AActor* Projectile = World->SpawnActor<AActor>(ProjectileClass, SpawnLoc, SpawnRot, Params);
+    if (Projectile)
+    {
+        // Try to set initial velocity if it has a ProjectileMovementComponent
+        UProjectileMovementComponent* PM = Projectile->FindComponentByClass<UProjectileMovementComponent>();
+        if (PM)
+        {
+            // Force the projectile to travel along the ship's up vector
+            PM->Velocity = GetActorUpVector() * PM->InitialSpeed;
+        }
+    }
 }

@@ -84,4 +84,14 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void RotateShip(float Input, float DeltaTime);
+
+    // Weapons
+    UPROPERTY(EditDefaultsOnly, Category = "Weapons")
+    TSubclassOf<AActor> ProjectileClass;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapons")
+    FVector MuzzleOffset = FVector(0.f, 0.f, 100.f);
+
+    UFUNCTION(BlueprintCallable)
+    void Fire();
 };
