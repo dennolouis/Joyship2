@@ -1,6 +1,9 @@
 #include "Pawns/BaseShip.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
+#include "Particles/ParticleSystem.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
 ABaseShip::ABaseShip()
@@ -73,7 +76,40 @@ void ABaseShip::BeginPlay()
         FVector TinyImpulse = FVector(0.f, 0.f, -5.f) * Root->GetMass();
         Root->AddImpulse(TinyImpulse);
         UE_LOG(LogTemp, Warning, TEXT("[BaseShip] BeginPlay: Applied tiny impulse=(%.2f,%.2f,%.2f) to wake body"), TinyImpulse.X, TinyImpulse.Y, TinyImpulse.Z);
+
+        // Bind overlap handler
+        Root->SetGenerateOverlapEvents(true);
+        Root->OnComponentBeginOverlap.AddDynamic(this, &ABaseShip::OnRootBeginOverlap);
+        // Also bind actor-level overlap as backup
+        OnActorBeginOverlap.AddDynamic(this, &ABaseShip::OnActorBeginOverlapHandler);
+        // Bind hit handler for blocking collisions
+        Root->SetNotifyRigidBodyCollision(true);
+        Root->OnComponentHit.AddDynamic(this, &ABaseShip::OnRootHit);
+
+        // Log overlap-related settings for debugging
+        UE_LOG(LogTemp, Warning, TEXT("[BaseShip] Overlap settings: GenerateOverlapEvents=%d CollisionEnabled=%d ObjectType=%d Response_WorldDynamic=%d Response_PhysicsBody=%d Response_Pawn=%d"),
+            Root->GetGenerateOverlapEvents(),
+            (int)Root->GetCollisionEnabled(),
+            (int)Root->GetCollisionObjectType(),
+            (int)Root->GetCollisionResponseToChannel(ECC_WorldDynamic),
+            (int)Root->GetCollisionResponseToChannel(ECC_PhysicsBody),
+            (int)Root->GetCollisionResponseToChannel(ECC_Pawn));
     }
+}
+
+void ABaseShip::OnRootBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult)
+{
+    UE_LOG(LogTemp, Warning, TEXT("[BaseShip] OnRootBeginOverlap: Other=%s"), OtherActor ? *OtherActor->GetName() : TEXT("None"));
+}
+
+void ABaseShip::OnActorBeginOverlapHandler(AActor* OverlappedActor, AActor* OtherActor)
+{
+    UE_LOG(LogTemp, Warning, TEXT("[BaseShip] OnActorBeginOverlap: Other=%s"), OtherActor ? *OtherActor->GetName() : TEXT("None"));
+}
+
+void ABaseShip::OnRootHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+    UE_LOG(LogTemp, Warning, TEXT("[BaseShip] OnRootHit: Other=%s Normal=(%.2f,%.2f,%.2f)"), OtherActor ? *OtherActor->GetName() : TEXT("None"), NormalImpulse.X, NormalImpulse.Y, NormalImpulse.Z);
 }
 
 void ABaseShip::Tick(float DeltaTime)
@@ -206,7 +242,24 @@ void ABaseShip::ApplyDamage(float DamageAmount)
 
 void ABaseShip::OnShipDestroyed()
 {
-	Destroy();
+    PlayExplosionEffect();
+    Destroy();
+}
+
+void ABaseShip::PlayExplosionEffect()
+{
+    FVector Loc = GetActorLocation();
+    FRotator Rot = GetActorRotation();
+
+    if (ExplosionEffect)
+    {
+        UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplosionEffect, Loc, Rot);
+    }
+
+    if (ExplosionSound)
+    {
+        UGameplayStatics::PlaySoundAtLocation(GetWorld(), ExplosionSound, Loc);
+    }
 }
 
 void ABaseShip::Fire()

@@ -94,4 +94,27 @@ public:
 
     UFUNCTION(BlueprintCallable)
     void Fire();
+
+    /* ---------------- EFFECTS ---------------- */
+    // Explosion effect to play on collision / destruction
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
+    UParticleSystem* ExplosionEffect;
+
+    // Explosion sound
+    UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
+    USoundBase* ExplosionSound;
+
+    UFUNCTION(BlueprintCallable)
+    void PlayExplosionEffect();
+
+    // Overlap handler for the root capsule
+    UFUNCTION()
+    void OnRootBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult & SweepResult);
+
+    UFUNCTION()
+    void OnActorBeginOverlapHandler(AActor* OverlappedActor, AActor* OtherActor);
+
+    // Hit handler for blocking collisions
+    UFUNCTION()
+    void OnRootHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 };
