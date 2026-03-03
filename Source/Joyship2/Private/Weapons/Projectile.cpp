@@ -3,6 +3,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "GameFramework/DamageType.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/HealthComponent.h"
 
 AProjectile::AProjectile()
 {
@@ -35,7 +36,17 @@ void AProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimi
 {
     if (OtherActor && OtherActor != this && OtherComp)
     {
-        UGameplayStatics::ApplyPointDamage(OtherActor, Damage, GetVelocity(), Hit, GetInstigatorController(), this, UDamageType::StaticClass());
+        // If the other actor has a health component, apply damage to it directly
+        UHealthComponent* HC = OtherActor->FindComponentByClass<UHealthComponent>();
+        if (HC)
+        {
+            HC->ApplyDamage(Damage);
+        }
+        else
+        {
+            // Fallback to gameplay damage system
+            UGameplayStatics::ApplyPointDamage(OtherActor, Damage, GetVelocity(), Hit, GetInstigatorController(), this, UDamageType::StaticClass());
+        }
     }
 
     Destroy();
