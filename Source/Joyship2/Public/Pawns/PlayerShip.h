@@ -38,4 +38,17 @@ protected:
 
 	float RotationInput = 0.f;
 	bool bThrusting = false;
+
+    /* ---------------- FUEL ---------------- */
+    // Maximum fuel capacity
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ship|Fuel")
+    float MaxFuel = 100.f;
+
+    // Current fuel amount
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship|Fuel")
+    float CurrentFuel = 0.f;
+
+    // Fuel consumption rate (units per second) while thrusting
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ship|Fuel")
+    float FuelConsumptionRate = 10.f;
 };

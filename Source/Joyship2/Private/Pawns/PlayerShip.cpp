@@ -25,6 +25,9 @@ APlayerShip::APlayerShip()
 void APlayerShip::BeginPlay()
 {
 	Super::BeginPlay();
+
+    // initialize fuel
+    CurrentFuel = MaxFuel;
 }
 
 void APlayerShip::Tick(float DeltaTime)
@@ -39,7 +42,25 @@ void APlayerShip::Tick(float DeltaTime)
 	// Always call ApplyThrust so targets update; when not thrusting, target goes to zero
 	if (bThrusting)
 	{
-		ApplyThrust(DeltaTime);
+		// If we have fuel, apply thrust and consume fuel
+		if (CurrentFuel > 0.f)
+		{
+			ApplyThrust(DeltaTime);
+			// Consume fuel
+			float FuelUsed = FuelConsumptionRate * DeltaTime;
+			CurrentFuel = FMath::Max(0.f, CurrentFuel - FuelUsed);
+			// If fuel ran out this frame, stop thrusting next frame
+			if (CurrentFuel <= 0.f)
+			{
+				bThrusting = false;
+			}
+		}
+		else
+		{
+			// No fuel: ensure thrusting is disabled and target is zero
+			bThrusting = false;
+			this->TargetLinearVelocity = FVector::ZeroVector;
+		}
 	}
 	else
 	{
@@ -69,7 +90,11 @@ void APlayerShip::RotateInput(float Value)
 
 void APlayerShip::StartThrust()
 {
-	bThrusting = true;
+	// Only allow starting thrust if we have fuel
+	if (CurrentFuel > 0.f)
+	{
+		bThrusting = true;
+	}
 }
 
 void APlayerShip::StopThrust()
