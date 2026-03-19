@@ -15,12 +15,8 @@ AEnemyShip::AEnemyShip()
     AggroSphere->SetupAttachment(RootComponent);
     AggroSphere->InitSphereRadius(800.f);
     AggroSphere->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
-    AggroSphere->SetCollisionResponseToAllChannels(ECR_Ignore);
-    // Allow overlap with common pawn/physics/world dynamic object types so player's physics capsule is detected
-    AggroSphere->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
-    AggroSphere->SetCollisionResponseToChannel(ECC_PhysicsBody, ECR_Overlap);
-    AggroSphere->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
-    AggroSphere->SetGenerateOverlapEvents(true);
+    // Use a simple overlap profile so it reliably generates overlaps for pawns
+    AggroSphere->SetCollisionProfileName(TEXT("OverlapOnlyPawn"));
 
     // Health component
     HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComp"));
@@ -37,6 +33,22 @@ void AEnemyShip::BeginPlay()
     }
 }
 
+void AEnemyShip::StartFollowing(AActor* Target)
+{
+    if (!Target) return;
+    FollowTarget = Target;
+    bFollowing = true;
+    UE_LOG(LogTemp, Warning, TEXT("[EnemyShip] StartFollowing called for %s"), *Target->GetName());
+}
+
+void AEnemyShip::StopFollowing()
+{
+    FollowTarget = nullptr;
+    bFollowing = false;
+    TargetLinearVelocity = FVector::ZeroVector;
+    UE_LOG(LogTemp, Warning, TEXT("[EnemyShip] StopFollowing called"));
+}
+
 void AEnemyShip::Tick(float DeltaTime)
 {
     Super::Tick(DeltaTime);
@@ -50,19 +62,34 @@ void AEnemyShip::Tick(float DeltaTime)
         {
             FVector Dir = ToTarget.GetSafeNormal();
 
-            // Rotate to face the target smoothly
-            FRotator Current = GetActorRotation();
-            FRotator TargetRot = Dir.Rotation();
-            // We want the ship's up vector to face the direction used in BaseShip (thrust uses GetActorUpVector), so align Pitch/Yaw accordingly
-            // Keep roll zero
-            TargetRot.Pitch = 0.f;
-            TargetRot.Roll = 0.f;
-            FRotator NewRot = FMath::RInterpTo(Current, TargetRot, DeltaTime, 4.f);
+            // Compute rotation so that the actor's Up vector points toward the target direction
+            FVector CurrentUp = GetActorUpVector();
+            FVector DesiredUp = Dir;
+
+            // Build quaternions from the two directions and slerp between them for smooth turning
+            FQuat CurQuat = GetActorQuat();
+            FQuat FromTo = FQuat::FindBetweenNormals(CurrentUp, DesiredUp);
+            FQuat TargetQuat = FromTo * CurQuat;
+
+            // Slerp toward target quaternion
+            FQuat NewQuat = FQuat::Slerp(CurQuat, TargetQuat, FMath::Clamp(RotationSpeed * DeltaTime, 0.f, 1.f));
+            FRotator NewRot = NewQuat.Rotator();
+            // Apply the full rotation so the actor's Up vector aligns with the desired direction
             SetActorRotation(NewRot);
 
-            // Move forward along actor up vector (ship's forward for this project is up)
+            // Move forward along actor up vector (matching ABaseShip thrust axis)
+            // Project movement onto the XY plane so the enemy does not move vertically
             FVector MoveDir = GetActorUpVector();
-            TargetLinearVelocity = MoveDir * ThrustForce;
+            MoveDir.Z = 0.f;
+            if (MoveDir.SizeSquared() > KINDA_SMALL_NUMBER)
+            {
+                MoveDir = MoveDir.GetSafeNormal();
+                TargetLinearVelocity = MoveDir * ThrustForce;
+            }
+            else
+            {
+                TargetLinearVelocity = FVector::ZeroVector;
+            }
         }
         else
         {

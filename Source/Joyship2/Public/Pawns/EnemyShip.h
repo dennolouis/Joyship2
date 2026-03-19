@@ -24,6 +24,14 @@ public:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Enemy")
     UHealthComponent* HealthComp;
 
+    // Start following target (callable from Blueprints)
+    UFUNCTION(BlueprintCallable, Category = "Enemy")
+    void StartFollowing(AActor* Target);
+
+    // Stop following (callable from Blueprints)
+    UFUNCTION(BlueprintCallable, Category = "Enemy")
+    void StopFollowing();
+
 protected:
     virtual void BeginPlay() override;
     virtual void Tick(float DeltaTime) override;
@@ -41,4 +49,8 @@ protected:
 
     // The actor we are following (player)
     AActor* FollowTarget = nullptr;
+
+    // Rotation interpolation speed when turning to face the target
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy")
+    float RotationSpeed = 4.f;
 };
