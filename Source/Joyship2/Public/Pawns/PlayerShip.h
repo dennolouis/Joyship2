@@ -29,6 +29,10 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void StopThrust();
 
+	// Refill fuel by Amount (clamped to MaxFuel)
+	UFUNCTION(BlueprintCallable, Category = "Ship|Fuel")
+	void RefillFuel(float Amount);
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;

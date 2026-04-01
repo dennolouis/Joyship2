@@ -92,6 +92,17 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapons")
     FVector MuzzleOffset = FVector(0.f, 0.f, 100.f);
 
+    // Aim assist settings: when firing, trace forward and aim at the first hit actor
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapons|AimAssist")
+    bool bEnableAimAssist = true;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapons|AimAssist")
+    float AimAssistRange = 5000.f;
+
+    // Radius for sphere trace; set to 0 to use a precise line trace
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Weapons|AimAssist")
+    float AimAssistRadius = 150.f;
+
     UFUNCTION(BlueprintCallable)
     void Fire();
 

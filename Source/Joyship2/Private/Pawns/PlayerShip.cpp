@@ -101,3 +101,10 @@ void APlayerShip::StopThrust()
 {
     bThrusting = false;
 }
+
+void APlayerShip::RefillFuel(float Amount)
+{
+    if (Amount <= 0.f) return;
+    CurrentFuel = FMath::Clamp(CurrentFuel + Amount, 0.f, MaxFuel);
+    UE_LOG(LogTemp, Warning, TEXT("[PlayerShip] RefillFuel: NewFuel=%.2f"), CurrentFuel);
+}

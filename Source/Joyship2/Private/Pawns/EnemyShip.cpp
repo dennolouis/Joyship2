@@ -20,11 +20,25 @@ AEnemyShip::AEnemyShip()
 
     // Health component
     HealthComp = CreateDefaultSubobject<UHealthComponent>(TEXT("HealthComp"));
+
+    // Ensure the enemy is not affected by gravity
+    if (Root)
+    {
+        Root->SetEnableGravity(false);
+        // keep physics simulation enabled so movement via SetPhysicsLinearVelocity works
+        Root->SetSimulatePhysics(true);
+    }
 }
 
 void AEnemyShip::BeginPlay()
 {
     Super::BeginPlay();
+
+    // Reinforce gravity disable in case Blueprints or defaults changed it
+    if (Root)
+    {
+        Root->SetEnableGravity(false);
+    }
 
     if (AggroSphere)
     {
@@ -56,7 +70,7 @@ void AEnemyShip::Tick(float DeltaTime)
     if (bFollowing && FollowTarget)
     {
         FVector ToTarget = FollowTarget->GetActorLocation() - GetActorLocation();
-        ToTarget.Z = 0.f; // keep movement in XY plane
+        ToTarget.X = 0.f; // keep movement in ZY plane
         float Dist = ToTarget.Size();
         if (Dist > KINDA_SMALL_NUMBER)
         {
@@ -78,9 +92,9 @@ void AEnemyShip::Tick(float DeltaTime)
             SetActorRotation(NewRot);
 
             // Move forward along actor up vector (matching ABaseShip thrust axis)
-            // Project movement onto the XY plane so the enemy does not move vertically
+            // Project movement onto the ZY plane so the enemy does not move along X
             FVector MoveDir = GetActorUpVector();
-            MoveDir.Z = 0.f;
+            MoveDir.X = 0.f;
             if (MoveDir.SizeSquared() > KINDA_SMALL_NUMBER)
             {
                 MoveDir = MoveDir.GetSafeNormal();

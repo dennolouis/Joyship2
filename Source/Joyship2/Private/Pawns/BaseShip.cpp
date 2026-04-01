@@ -5,6 +5,7 @@
 #include "Sound/SoundBase.h"
 #include "Particles/ParticleSystem.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "Components/HealthComponent.h"
 
 ABaseShip::ABaseShip()
 {
@@ -271,6 +272,66 @@ void ABaseShip::Fire()
     // Spawn at the ship's muzzle using the ship's up/forward/right offsets
     FVector SpawnLoc = GetActorLocation() + GetActorUpVector() * MuzzleOffset.Z + GetActorForwardVector() * MuzzleOffset.X + GetActorRightVector() * MuzzleOffset.Y;
     FRotator SpawnRot = GetActorRotation();
+
+    // Aim assist: trace forward and, if we hit an actor with a HealthComponent, adjust spawn rotation to aim at it
+    if (bEnableAimAssist)
+    {
+        FVector TraceStart = SpawnLoc;
+        FVector TraceDir = GetActorUpVector();
+        FVector TraceEnd = TraceStart + TraceDir * AimAssistRange;
+
+        FHitResult Hit;
+        FCollisionQueryParams Params;
+        Params.AddIgnoredActor(this);
+
+        bool bHitSomething = false;
+        AActor* BestTarget = nullptr;
+
+        // Use object type queries so we hit actors whose components overlap pawns
+        FCollisionObjectQueryParams ObjParams;
+        ObjParams.AddObjectTypesToQuery(ECC_Pawn);
+        ObjParams.AddObjectTypesToQuery(ECC_PhysicsBody);
+        ObjParams.AddObjectTypesToQuery(ECC_WorldDynamic);
+
+        if (AimAssistRadius > 0.f)
+        {
+            // Sphere sweep by object type to find candidates
+            TArray<FHitResult> Hits;
+            bool bHit = World->SweepMultiByObjectType(Hits, TraceStart, TraceEnd, FQuat::Identity, ObjParams, FCollisionShape::MakeSphere(AimAssistRadius), Params);
+            if (bHit)
+            {
+                for (const FHitResult& H : Hits)
+                {
+                    if (H.GetActor() && H.GetActor() != this)
+                    {
+                        if (H.GetActor()->FindComponentByClass<UHealthComponent>())
+                        {
+                            BestTarget = H.GetActor();
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Line trace by object type
+            if (World->LineTraceSingleByObjectType(Hit, TraceStart, TraceEnd, ObjParams, Params))
+            {
+                if (Hit.GetActor() && Hit.GetActor()->FindComponentByClass<UHealthComponent>())
+                {
+                    BestTarget = Hit.GetActor();
+                }
+            }
+        }
+
+        if (BestTarget)
+        {
+            FVector AimLoc = BestTarget->GetActorLocation();
+            FVector AimDir = (AimLoc - SpawnLoc).GetSafeNormal();
+            SpawnRot = AimDir.Rotation();
+        }
+    }
 
     FActorSpawnParameters Params;
     Params.Owner = this;
