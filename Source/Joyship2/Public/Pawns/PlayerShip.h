@@ -6,6 +6,8 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "PlayerShip.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFuelChanged, float, NewFuel, float, MaxFuelCapacity);
+
 UCLASS()
 class JOYSHIP2_API APlayerShip : public ABaseShip
 {
@@ -32,6 +34,10 @@ public:
 	// Refill fuel by Amount (clamped to MaxFuel)
 	UFUNCTION(BlueprintCallable, Category = "Ship|Fuel")
 	void RefillFuel(float Amount);
+
+	/* ------------ DELEGATES ------------ */
+	UPROPERTY(BlueprintAssignable, Category = "Ship|Fuel")
+	FOnFuelChanged OnFuelChanged;
 
 protected:
 	virtual void BeginPlay() override;

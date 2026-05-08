@@ -28,6 +28,7 @@ void APlayerShip::BeginPlay()
 
     // initialize fuel
     CurrentFuel = MaxFuel;
+    OnFuelChanged.Broadcast(CurrentFuel, MaxFuel);
 }
 
 void APlayerShip::Tick(float DeltaTime)
@@ -48,7 +49,13 @@ void APlayerShip::Tick(float DeltaTime)
 			ApplyThrust(DeltaTime);
 			// Consume fuel
 			float FuelUsed = FuelConsumptionRate * DeltaTime;
+			float PreviousFuel = CurrentFuel;
 			CurrentFuel = FMath::Max(0.f, CurrentFuel - FuelUsed);
+			// Broadcast if fuel changed
+			if (CurrentFuel != PreviousFuel)
+			{
+				OnFuelChanged.Broadcast(CurrentFuel, MaxFuel);
+			}
 			// If fuel ran out this frame, stop thrusting next frame
 			if (CurrentFuel <= 0.f)
 			{
@@ -106,5 +113,6 @@ void APlayerShip::RefillFuel(float Amount)
 {
     if (Amount <= 0.f) return;
     CurrentFuel = FMath::Clamp(CurrentFuel + Amount, 0.f, MaxFuel);
+    OnFuelChanged.Broadcast(CurrentFuel, MaxFuel);
     UE_LOG(LogTemp, Warning, TEXT("[PlayerShip] RefillFuel: NewFuel=%.2f"), CurrentFuel);
 }
