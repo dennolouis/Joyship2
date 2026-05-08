@@ -29,11 +29,32 @@ void APlayerShip::BeginPlay()
     // initialize fuel
     CurrentFuel = MaxFuel;
     OnFuelChanged.Broadcast(CurrentFuel, MaxFuel);
+
+    // Set initial camera FOV
+    if (Camera)
+    {
+        Camera->SetFieldOfView(NormalFOV);
+    }
 }
 
 void APlayerShip::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	// Update camera FOV smoothly based on boost state
+	if (Camera)
+	{
+		float TargetFOV = bBoostActive ? BoostFOV : NormalFOV;
+		float CurrentFOV = Camera->FieldOfView;
+		float LerpAlpha = FMath::Clamp(FOVTransitionSpeed * DeltaTime, 0.f, 1.f);
+		float NewFOV = FMath::Lerp(CurrentFOV, TargetFOV, LerpAlpha);
+		
+		// Only update if the value actually changed
+		if (!FMath::IsNearlyEqual(NewFOV, CurrentFOV, 0.01f))
+		{
+			Camera->SetFieldOfView(NewFOV);
+		}
+	}
 
 	// Apply rotation every frame
     // Apply rotation every frame (call even when input is nearly zero so physics can be cleared)
@@ -115,4 +136,29 @@ void APlayerShip::RefillFuel(float Amount)
     CurrentFuel = FMath::Clamp(CurrentFuel + Amount, 0.f, MaxFuel);
     OnFuelChanged.Broadcast(CurrentFuel, MaxFuel);
     UE_LOG(LogTemp, Warning, TEXT("[PlayerShip] RefillFuel: NewFuel=%.2f"), CurrentFuel);
+}
+
+void APlayerShip::EnableBoost()
+{
+	if (bBoostActive) return;
+
+	bBoostActive = true;
+	// Cache the current ThrustForce if not already cached
+	if (CachedNormalThrustForce == 0.f)
+	{
+		CachedNormalThrustForce = ThrustForce;
+	}
+	// Apply boost multiplier
+	ThrustForce = CachedNormalThrustForce * BoostMultiplier;
+	UE_LOG(LogTemp, Warning, TEXT("[PlayerShip] Boost enabled. ThrustForce: %.2f -> %.2f"), CachedNormalThrustForce, ThrustForce);
+}
+
+void APlayerShip::DisableBoost()
+{
+	if (!bBoostActive) return;
+
+	bBoostActive = false;
+	// Restore original thrust force
+	ThrustForce = CachedNormalThrustForce;
+	UE_LOG(LogTemp, Warning, TEXT("[PlayerShip] Boost disabled. ThrustForce: %.2f"), ThrustForce);
 }

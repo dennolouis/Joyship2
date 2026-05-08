@@ -7,6 +7,8 @@
 class UParticleSystem;
 class USoundBase;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChanged, float, NewHealth, float, MaxHealthCapacity);
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class JOYSHIP2_API UHealthComponent : public UActorComponent
 {
@@ -40,4 +42,8 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "Health")
     void Explode();
+
+    /* ------------ DELEGATES ------------ */
+    UPROPERTY(BlueprintAssignable, Category = "Health")
+    FOnHealthChanged OnHealthChanged;
 };

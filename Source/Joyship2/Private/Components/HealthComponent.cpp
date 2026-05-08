@@ -10,11 +10,13 @@ void UHealthComponent::BeginPlay()
 {
     Super::BeginPlay();
     CurrentHealth = MaxHealth;
+    OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
 }
 
 void UHealthComponent::ApplyDamage(float DamageAmount)
 {
     CurrentHealth -= DamageAmount;
+    OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
     if (CurrentHealth <= 0.f)
     {
         Explode();

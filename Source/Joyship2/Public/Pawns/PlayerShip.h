@@ -35,6 +35,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Ship|Fuel")
 	void RefillFuel(float Amount);
 
+	// Enable boost - increases thrust force
+	UFUNCTION(BlueprintCallable, Category = "Ship|Boost")
+	void EnableBoost();
+
+	// Disable boost - restores normal thrust force
+	UFUNCTION(BlueprintCallable, Category = "Ship|Boost")
+	void DisableBoost();
+
 	/* ------------ DELEGATES ------------ */
 	UPROPERTY(BlueprintAssignable, Category = "Ship|Fuel")
 	FOnFuelChanged OnFuelChanged;
@@ -61,4 +69,28 @@ protected:
     // Fuel consumption rate (units per second) while thrusting
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ship|Fuel")
     float FuelConsumptionRate = 10.f;
+
+	/* ------------ BOOST ---------------- */
+	// Original thrust force (cached when boost is first enabled)
+	float CachedNormalThrustForce = 0.f;
+
+	// Boost multiplier applied to ThrustForce
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ship|Boost")
+	float BoostMultiplier = 1.5f;
+
+	// Whether boost is currently active
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship|Boost")
+	bool bBoostActive = false;
+
+	// Camera FOV when not boosting
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ship|Boost")
+	float NormalFOV = 90.f;
+
+	// Camera FOV when boosting
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ship|Boost")
+	float BoostFOV = 110.f;
+
+	// Speed of FOV transition (higher = faster)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ship|Boost")
+	float FOVTransitionSpeed = 5.f;
 };

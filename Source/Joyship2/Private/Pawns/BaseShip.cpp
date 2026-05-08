@@ -1,6 +1,7 @@
 #include "Pawns/BaseShip.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundBase.h"
 #include "Particles/ParticleSystem.h"
@@ -254,7 +255,24 @@ void ABaseShip::PlayExplosionEffect()
 
     if (ExplosionEffect)
     {
-        UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplosionEffect, Loc, Rot);
+        UParticleSystemComponent* SpawnedEffect = UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplosionEffect, Loc, Rot);
+        if (SpawnedEffect && GetWorld())
+        {
+            // Destroy the effect component after 10 seconds
+            FTimerHandle DestroyTimer;
+            GetWorld()->GetTimerManager().SetTimer(
+                DestroyTimer,
+                [SpawnedEffect]() 
+                {
+                    if (SpawnedEffect)
+                    {
+                        SpawnedEffect->DestroyComponent();
+                    }
+                },
+                10.0f,
+                false
+            );
+        }
     }
 
     if (ExplosionSound)
