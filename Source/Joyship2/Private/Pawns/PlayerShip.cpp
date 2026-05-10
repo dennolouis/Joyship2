@@ -44,7 +44,7 @@ void APlayerShip::Tick(float DeltaTime)
 	// Update camera FOV smoothly based on boost state
 	if (Camera)
 	{
-		float TargetFOV = bBoostActive ? BoostFOV : NormalFOV;
+		float TargetFOV = (bBoostActive && bThrusting) ? BoostFOV : NormalFOV;
 		float CurrentFOV = Camera->FieldOfView;
 		float LerpAlpha = FMath::Clamp(FOVTransitionSpeed * DeltaTime, 0.f, 1.f);
 		float NewFOV = FMath::Lerp(CurrentFOV, TargetFOV, LerpAlpha);
