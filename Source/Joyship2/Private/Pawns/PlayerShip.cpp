@@ -30,6 +30,10 @@ void APlayerShip::BeginPlay()
     CurrentFuel = MaxFuel;
     OnFuelChanged.Broadcast(CurrentFuel, MaxFuel);
 
+    // Initialize boost fuel
+    CurrentBoostFuel = MaxBoostFuel;
+    OnBoostFuelChanged.Broadcast(CurrentBoostFuel, MaxBoostFuel);
+
     // Set initial camera FOV
     if (Camera)
     {
@@ -53,6 +57,45 @@ void APlayerShip::Tick(float DeltaTime)
 		if (!FMath::IsNearlyEqual(NewFOV, CurrentFOV, 0.01f))
 		{
 			Camera->SetFieldOfView(NewFOV);
+		}
+	}
+
+	// Manage boost fuel consumption and regeneration
+	if (bBoostActive && bThrusting && CurrentBoostFuel > 0.f)
+	{
+		// Consume boost fuel while boosting and thrusting
+		float BoostFuelUsed = BoostFuelConsumptionRate * DeltaTime;
+		float PreviousBoostFuel = CurrentBoostFuel;
+		CurrentBoostFuel = FMath::Max(0.f, CurrentBoostFuel - BoostFuelUsed);
+		// Broadcast if boost fuel changed
+		if (CurrentBoostFuel != PreviousBoostFuel)
+		{
+			OnBoostFuelChanged.Broadcast(CurrentBoostFuel, MaxBoostFuel);
+		}
+		// If boost fuel ran out, disable boost
+		if (CurrentBoostFuel <= 0.f)
+		{
+			DisableBoost();
+		}
+		// Reset the regen timer when actively boosting
+		TimeSinceBoostDeactivated = 0.f;
+	}
+	else if (!bBoostActive && CurrentBoostFuel < MaxBoostFuel)
+	{
+		// Track time since boost was deactivated
+		TimeSinceBoostDeactivated += DeltaTime;
+
+		// Only regenerate after the delay has passed
+		if (TimeSinceBoostDeactivated >= BoostFuelRegenDelay)
+		{
+			float BoostFuelRegen = BoostFuelRegenRate * DeltaTime;
+			float PreviousBoostFuel = CurrentBoostFuel;
+			CurrentBoostFuel = FMath::Min(MaxBoostFuel, CurrentBoostFuel + BoostFuelRegen);
+			// Broadcast if boost fuel changed
+			if (CurrentBoostFuel != PreviousBoostFuel)
+			{
+				OnBoostFuelChanged.Broadcast(CurrentBoostFuel, MaxBoostFuel);
+			}
 		}
 	}
 
@@ -141,6 +184,7 @@ void APlayerShip::RefillFuel(float Amount)
 void APlayerShip::EnableBoost()
 {
 	if (bBoostActive) return;
+	if (CurrentBoostFuel <= 0.f) return;
 
 	bBoostActive = true;
 	// Cache the current ThrustForce if not already cached
@@ -160,5 +204,20 @@ void APlayerShip::DisableBoost()
 	bBoostActive = false;
 	// Restore original thrust force
 	ThrustForce = CachedNormalThrustForce;
+	// Start the regeneration delay timer
+	TimeSinceBoostDeactivated = 0.f;
 	UE_LOG(LogTemp, Warning, TEXT("[PlayerShip] Boost disabled. ThrustForce: %.2f"), ThrustForce);
+}
+
+void APlayerShip::RefillBoostFuel(float Amount)
+{
+    if (Amount <= 0.f) return;
+    float PreviousBoostFuel = CurrentBoostFuel;
+    CurrentBoostFuel = FMath::Clamp(CurrentBoostFuel + Amount, 0.f, MaxBoostFuel);
+    // Broadcast if boost fuel changed
+    if (CurrentBoostFuel != PreviousBoostFuel)
+    {
+        OnBoostFuelChanged.Broadcast(CurrentBoostFuel, MaxBoostFuel);
+    }
+    UE_LOG(LogTemp, Warning, TEXT("[PlayerShip] RefillBoostFuel: NewBoostFuel=%.2f"), CurrentBoostFuel);
 }

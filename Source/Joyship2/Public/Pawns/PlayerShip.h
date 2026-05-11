@@ -7,6 +7,7 @@
 #include "PlayerShip.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnFuelChanged, float, NewFuel, float, MaxFuelCapacity);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnBoostFuelChanged, float, NewBoostFuel, float, MaxBoostFuelCapacity);
 
 UCLASS()
 class JOYSHIP2_API APlayerShip : public ABaseShip
@@ -43,9 +44,16 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Ship|Boost")
 	void DisableBoost();
 
+	// Refill boost fuel by Amount (clamped to MaxBoostFuel)
+	UFUNCTION(BlueprintCallable, Category = "Ship|Boost")
+	void RefillBoostFuel(float Amount);
+
 	/* ------------ DELEGATES ------------ */
 	UPROPERTY(BlueprintAssignable, Category = "Ship|Fuel")
 	FOnFuelChanged OnFuelChanged;
+
+	UPROPERTY(BlueprintAssignable, Category = "Ship|Boost")
+	FOnBoostFuelChanged OnBoostFuelChanged;
 
 protected:
 	virtual void BeginPlay() override;
@@ -93,4 +101,27 @@ protected:
 	// Speed of FOV transition (higher = faster)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ship|Boost")
 	float FOVTransitionSpeed = 5.f;
+
+	// Maximum boost fuel capacity
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ship|Boost")
+	float MaxBoostFuel = 50.f;
+
+	// Current boost fuel amount
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Ship|Boost")
+	float CurrentBoostFuel = 0.f;
+
+	// Boost fuel consumption rate (units per second) while boosting
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ship|Boost")
+	float BoostFuelConsumptionRate = 20.f;
+
+	// Boost fuel regeneration rate (units per second) when not boosting
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ship|Boost")
+	float BoostFuelRegenRate = 5.f;
+
+	// Time to wait before regeneration starts (in seconds)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Ship|Boost")
+	float BoostFuelRegenDelay = 2.f;
+
+	// Time elapsed since boost was deactivated
+	float TimeSinceBoostDeactivated = 0.f;
 };
