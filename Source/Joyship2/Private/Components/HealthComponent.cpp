@@ -1,4 +1,5 @@
 #include "Components/HealthComponent.h"
+#include "Actors/Collectable.h"
 #include "Kismet/GameplayStatics.h"
 
 UHealthComponent::UHealthComponent()
@@ -39,6 +40,12 @@ void UHealthComponent::Explode()
     if (ExplosionSound)
     {
         UGameplayStatics::PlaySoundAtLocation(GetWorld(), ExplosionSound, Loc);
+    }
+
+    // Spawn collectable based on probability if class is set
+    if (CollectableClass && FMath::FRand() < CollectableSpawnChance)
+    {
+        GetWorld()->SpawnActor<ACollectable>(CollectableClass, Loc, Rot);
     }
 
     Owner->Destroy();
