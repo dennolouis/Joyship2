@@ -70,7 +70,15 @@ public:
 	// Check if actor is on cooldown
 	bool IsActorOnCooldown(AActor* Actor) const;
 
+	UFUNCTION(BlueprintCallable, Category = "Portal")
+	void SetCanTeleport(bool bNewCanTeleport) { bCanTeleport = bNewCanTeleport; }
+
+	bool CanTeleport() const { return bCanTeleport; }
+
 private:
+
+	bool bCanTeleport = true;
+
 	// Overlap callback
 	UFUNCTION()
 	void OnTriggerBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);

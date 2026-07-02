@@ -101,13 +101,18 @@ void APortal::TeleportActor(AActor* ActorToTeleport)
 
 void APortal::PerformTeleportation(AActor* ActorToTeleport, APortal* ExitPortal)
 {
-	if (!ActorToTeleport || !ExitPortal)
+	if (!ActorToTeleport || !ExitPortal || !CanTeleport() || !ExitPortal->CanTeleport())
 	{
 		return;
 	}
 
-	// Add cooldown to BOTH portals BEFORE teleporting to prevent immediate re-teleport
+	OnActorTeleported.Broadcast(ActorToTeleport, ExitPortal);
+	bCanTeleport = false;
+	ExitPortal->SetCanTeleport(false);
+
+	// Add cooldown to THIS portal to prevent re-triggering from the same portal
 	TeleportCooldownMap.Add(ActorToTeleport, TeleportCooldown);
+	// Add cooldown to EXIT portal to prevent immediate re-teleport through the destination
 	ExitPortal->TeleportCooldownMap.Add(ActorToTeleport, ExitPortal->TeleportCooldown);
 
 	// Get exit location
@@ -155,19 +160,16 @@ void APortal::PerformTeleportation(AActor* ActorToTeleport, APortal* ExitPortal)
 		}
 	}
 
-	// Play effects
-	if (TeleportEffect)
+	// Play effects at exit portal
+	if (ExitPortal->TeleportEffect)
 	{
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), TeleportEffect, ExitLocation);
+		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExitPortal->TeleportEffect, ExitLocation);
 	}
 
-	if (TeleportSound)
+	if (ExitPortal->TeleportSound)
 	{
-		UGameplayStatics::PlaySoundAtLocation(GetWorld(), TeleportSound, ExitLocation);
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ExitPortal->TeleportSound, ExitLocation);
 	}
-
-	// Broadcast delegate
-	OnActorTeleported.Broadcast(ActorToTeleport, ExitPortal);
 
 	UE_LOG(LogTemp, Warning, TEXT("[Portal] Teleported %s from %s to %s"), *ActorToTeleport->GetName(), *GetName(), *ExitPortal->GetName());
 }
