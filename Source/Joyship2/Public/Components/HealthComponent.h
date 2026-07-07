@@ -4,7 +4,7 @@
 #include "Components/ActorComponent.h"
 #include "HealthComponent.generated.h"
 
-class UParticleSystem;
+class UNiagaraSystem;
 class USoundBase;
 class ACollectable;
 
@@ -32,7 +32,7 @@ public:
 
     // Explosion effect to play on death
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
-    UParticleSystem* ExplosionEffect;
+    UNiagaraSystem* ExplosionEffect;
 
     // Explosion sound
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")

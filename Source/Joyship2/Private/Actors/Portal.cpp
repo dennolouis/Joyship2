@@ -1,11 +1,12 @@
 #include "Actors/Portal.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "Particles/ParticleSystem.h"
 #include "Sound/SoundBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Niagara/Public/NiagaraFunctionLibrary.h"
+#include "Niagara/Public/NiagaraComponent.h"
 
 APortal::APortal()
 {
@@ -49,22 +50,6 @@ void APortal::BeginPlay()
 void APortal::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	// Update cooldown timers
-	TArray<AActor*> ActorsToRemove;
-	for (TPair<AActor*, float>& Pair : TeleportCooldownMap)
-	{
-		Pair.Value -= DeltaTime;
-		if (Pair.Value <= 0.f)
-		{
-			ActorsToRemove.Add(Pair.Key);
-		}
-	}
-
-	for (AActor* Actor : ActorsToRemove)
-	{
-		TeleportCooldownMap.Remove(Actor);
-	}
 }
 
 void APortal::OnTriggerBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -109,11 +94,6 @@ void APortal::PerformTeleportation(AActor* ActorToTeleport, APortal* ExitPortal)
 	OnActorTeleported.Broadcast(ActorToTeleport, ExitPortal);
 	bCanTeleport = false;
 	ExitPortal->SetCanTeleport(false);
-
-	// Add cooldown to THIS portal to prevent re-triggering from the same portal
-	TeleportCooldownMap.Add(ActorToTeleport, TeleportCooldown);
-	// Add cooldown to EXIT portal to prevent immediate re-teleport through the destination
-	ExitPortal->TeleportCooldownMap.Add(ActorToTeleport, ExitPortal->TeleportCooldown);
 
 	// Get exit location
 	FVector ExitLocation = ExitPortal->GetActorLocation() + ExitPortal->ExitOffset;
@@ -163,7 +143,12 @@ void APortal::PerformTeleportation(AActor* ActorToTeleport, APortal* ExitPortal)
 	// Play effects at exit portal
 	if (ExitPortal->TeleportEffect)
 	{
-		UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExitPortal->TeleportEffect, ExitLocation);
+		UNiagaraComponent* SpawnedEffect = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), ExitPortal->TeleportEffect, ExitLocation);
+		if (SpawnedEffect)
+		{
+			// Auto destroy the component when the system finishes
+			SpawnedEffect->SetAutoDestroy(true);
+		}
 	}
 
 	if (ExitPortal->TeleportSound)
@@ -176,7 +161,7 @@ void APortal::PerformTeleportation(AActor* ActorToTeleport, APortal* ExitPortal)
 
 bool APortal::IsActorOnCooldown(AActor* Actor) const
 {
-	return TeleportCooldownMap.Contains(Actor);
+	return !bCanTeleport;
 }
 
 void APortal::SetLinkedPortal(APortal* NewLinkedPortal)

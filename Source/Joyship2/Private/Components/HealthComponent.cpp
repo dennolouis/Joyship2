@@ -1,6 +1,8 @@
 #include "Components/HealthComponent.h"
 #include "Actors/Collectable.h"
 #include "Kismet/GameplayStatics.h"
+#include "Niagara/Public/NiagaraFunctionLibrary.h"
+#include "Niagara/Public/NiagaraComponent.h"
 
 UHealthComponent::UHealthComponent()
 {
@@ -34,7 +36,12 @@ void UHealthComponent::Explode()
 
     if (ExplosionEffect)
     {
-        UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplosionEffect, Loc, Rot);
+        UNiagaraComponent* SpawnedEffect = UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), ExplosionEffect, Loc, Rot);
+        if (SpawnedEffect)
+        {
+            // Auto destroy the component when the system finishes
+            SpawnedEffect->SetAutoDestroy(true);
+        }
     }
 
     if (ExplosionSound)

@@ -5,6 +5,9 @@
 #include "Components/CapsuleComponent.h"
 #include "BaseShip.generated.h"
 
+class UNiagaraSystem;
+class USoundBase;
+
 UCLASS()
 class JOYSHIP2_API ABaseShip : public APawn
 {
@@ -109,7 +112,7 @@ public:
     /* ---------------- EFFECTS ---------------- */
     // Explosion effect to play on collision / destruction
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")
-    UParticleSystem* ExplosionEffect;
+    UNiagaraSystem* ExplosionEffect;
 
     // Explosion sound
     UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Effects")

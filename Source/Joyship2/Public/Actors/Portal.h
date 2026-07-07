@@ -8,7 +8,7 @@
 
 class USphereComponent;
 class UStaticMeshComponent;
-class UParticleSystem;
+class UNiagaraSystem;
 class USoundBase;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnActorTeleported, AActor*, TeleportedActor, APortal*, ExitPortal);
@@ -48,7 +48,7 @@ public:
 
 	// Effects
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Portal|Effects")
-	UParticleSystem* TeleportEffect;
+	UNiagaraSystem* TeleportEffect;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Portal|Effects")
 	USoundBase* TeleportSound;
@@ -82,8 +82,4 @@ private:
 	// Overlap callback
 	UFUNCTION()
 	void OnTriggerBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
-
-	// Cooldown tracking
-	UPROPERTY()
-	TMap<AActor*, float> TeleportCooldownMap;
 };
